@@ -15,7 +15,7 @@ ARG OPENSIM_COMMIT=""
 ARG DOTNET_RUNTIME=8.0
 
 ############################ build ############################
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 ARG OPENSIM_VERSION
 ARG OPENSIM_COMMIT
 
