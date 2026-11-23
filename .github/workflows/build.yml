@@ -65,7 +65,7 @@ jobs:
       source_tag: ${{ steps.meta.outputs.source_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Résoudre la version OpenSim et le commit amont
         id: meta
