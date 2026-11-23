@@ -1,0 +1,166 @@
+# Construit l'image OpenSim et la pousse sur GHCR comme "release candidate" (tag rc).
+# Elle ne devient "stable" que via le workflow "Promote" (validation manuelle).
+#
+# Déclencheurs :
+#  - bouton "Run workflow" (onglet Actions)       -> rebuild à la demande
+#  - push sur main qui touche l'image             -> rebuild de la version de OPENSIM_REF
+#  - appelé par "Check upstream" (workflow_call)  -> nouvelle version amont détectée
+name: Build image
+
+on:
+  workflow_dispatch:
+    inputs:
+      opensim_ref:
+        description: "Branche ou tag OpenSim (vide = contenu du fichier OPENSIM_REF)"
+        required: false
+        default: ""
+      dotnet_runtime:
+        description: "Runtime .NET de l'image"
+        type: choice
+        options: ["8.0", "10.0"]
+        default: "8.0"
+      deploy_rc:
+        description: "Mettre à jour l'instance RC sur Coolify après le build"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - "opensim/**"
+      - "OPENSIM_REF"
+      - ".github/workflows/build.yml"
+  workflow_call:
+    inputs:
+      opensim_ref:
+        type: string
+        required: true
+      dotnet_runtime:
+        type: string
+        default: "8.0"
+      deploy_rc:
+        type: boolean
+        default: true
+    outputs:
+      candidate_tag:
+        description: "Tag immuable de l'image construite (ex: build-42)"
+        value: ${{ jobs.build.outputs.candidate_tag }}
+      source_tag:
+        description: "Tag version + commit amont (ex: 0.9.3.0-1f4a6dd)"
+        value: ${{ jobs.build.outputs.source_tag }}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-image
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      candidate_tag: ${{ steps.meta.outputs.candidate_tag }}
+      source_tag: ${{ steps.meta.outputs.source_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Résoudre la version OpenSim et le commit amont
+        id: meta
+        env:
+          INPUT_REF: ${{ inputs.opensim_ref }}
+          INPUT_RUNTIME: ${{ inputs.dotnet_runtime }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          ref="${INPUT_REF:-}"
+          [ -n "$ref" ] || ref="$(tr -d '[:space:]' < OPENSIM_REF)"
+          runtime="${INPUT_RUNTIME:-8.0}"
+          sha="$(git ls-remote https://github.com/opensim/opensim.git "refs/heads/${ref}" "refs/tags/${ref}" | head -n1 | cut -f1)"
+          if [ -z "$sha" ]; then
+            echo "::error::Branche/tag OpenSim introuvable : ${ref}"
+            exit 1
+          fi
+          short="${sha:0:7}"
+          image="ghcr.io/${OWNER,,}/opensim"
+          suffix=""
+          [ "$runtime" = "8.0" ] || suffix="-net${runtime%%.*}"
+          {
+            echo "ref=${ref}"
+            echo "sha=${sha}"
+            echo "runtime=${runtime}"
+            echo "image=${image}"
+            echo "source_tag=${ref}-${short}${suffix}"
+            echo "candidate_tag=build-${RUN_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+          echo "OpenSim ${ref} @ ${short}, .NET ${runtime} -> ${image}"
+
+      - name: QEMU (seulement si arm64 demandé)
+        if: contains(vars.IMAGE_PLATFORMS, 'arm64')
+        uses: docker/setup-qemu-action@v4
+
+      - name: Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build et push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./opensim
+          push: true
+          platforms: ${{ vars.IMAGE_PLATFORMS || 'linux/amd64' }}
+          build-args: |
+            OPENSIM_VERSION=${{ steps.meta.outputs.ref }}
+            OPENSIM_COMMIT=${{ steps.meta.outputs.sha }}
+            DOTNET_RUNTIME=${{ steps.meta.outputs.runtime }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:rc
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.source_tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.candidate_tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.ref }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.sha }}
+            io.opensim.dotnet-runtime=${{ steps.meta.outputs.runtime }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Résumé
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SOURCE_TAG: ${{ steps.meta.outputs.source_tag }}
+          CANDIDATE: ${{ steps.meta.outputs.candidate_tag }}
+        run: |
+          {
+            echo "### Image RC publiée"
+            echo ""
+            echo "| Tag | Usage |"
+            echo "| --- | --- |"
+            echo "| \`${IMAGE}:rc\` | instance de test (Coolify) |"
+            echo "| \`${IMAGE}:${SOURCE_TAG}\` | version OpenSim + commit amont |"
+            echo "| \`${IMAGE}:${CANDIDATE}\` | tag immuable, à donner au workflow **Promote** |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mettre à jour l'instance RC sur Coolify
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_rc }}
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          SERVICE_UUID: ${{ secrets.COOLIFY_RC_SERVICE_UUID }}
+        run: |
+          if [ -z "${COOLIFY_URL}" ] || [ -z "${COOLIFY_TOKEN}" ] || [ -z "${SERVICE_UUID}" ]; then
+            echo "Secrets Coolify RC absents : étape ignorée"
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" -H "Accept: application/json" \
+            "${COOLIFY_URL%/}/api/v1/services/${SERVICE_UUID}/restart?latest=true"

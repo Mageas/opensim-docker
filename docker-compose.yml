@@ -1,0 +1,78 @@
+# OpenSimulator auto-hébergé : 1 simulateur standalone + MariaDB
+# Démarrage : cp .env.example .env  (puis éditer)  &&  docker compose up -d --build
+
+name: opensim
+
+services:
+  db:
+    image: mariadb:11.4
+    container_name: opensim-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?définir MYSQL_ROOT_PASSWORD dans .env}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MARIADB_USER: ${MYSQL_USER:-opensim}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:?définir MYSQL_PASSWORD dans .env}
+    command:
+      # Les assets (textures, meshes, sons) sont des blobs : on relève la taille max des paquets
+      - --max-allowed-packet=128M
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-512M}
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # Pas de port publié : la base n'est joignable que par OpenSim (réseau interne)
+
+  opensim:
+    build:
+      context: ./opensim
+      args:
+        OPENSIM_VERSION: ${OPENSIM_VERSION:-0.9.3.0}
+    image: opensim-local:${OPENSIM_VERSION:-0.9.3.0}
+    container_name: opensim
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Console interactive d'OpenSim (docker attach opensim)
+    stdin_open: true
+    tty: true
+    environment:
+      OPENSIM_PUBLIC_HOST: ${OPENSIM_PUBLIC_HOST:?définir OPENSIM_PUBLIC_HOST dans .env}
+      OPENSIM_HYPERGRID: ${OPENSIM_HYPERGRID:-false}
+      OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-Mon OpenSim}
+      OPENSIM_GRID_NICK: ${OPENSIM_GRID_NICK:-monopensim}
+      OPENSIM_WELCOME: ${OPENSIM_WELCOME:-Bienvenue !}
+      OPENSIM_PHYSICS: ${OPENSIM_PHYSICS:-BulletSim}
+      OPENSIM_REGION_NAME: ${OPENSIM_REGION_NAME:-Ma Region}
+      OPENSIM_REGION_LOCATION: ${OPENSIM_REGION_LOCATION:-1000,1000}
+      OPENSIM_REGION_SIZE: ${OPENSIM_REGION_SIZE:-256}
+      OPENSIM_ESTATE_NAME: ${OPENSIM_ESTATE_NAME:-Mon Estate}
+      OPENSIM_OWNER_FIRSTNAME: ${OPENSIM_OWNER_FIRSTNAME:?définir OPENSIM_OWNER_FIRSTNAME dans .env}
+      OPENSIM_OWNER_LASTNAME: ${OPENSIM_OWNER_LASTNAME:?définir OPENSIM_OWNER_LASTNAME dans .env}
+      OPENSIM_OWNER_PASSWORD: ${OPENSIM_OWNER_PASSWORD:?définir OPENSIM_OWNER_PASSWORD dans .env}
+      OPENSIM_OWNER_EMAIL: ${OPENSIM_OWNER_EMAIL:-owner@example.com}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MYSQL_USER: ${MYSQL_USER:-opensim}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "9000:9000/tcp"   # HTTP : login, assets, inventaire, capabilities
+      - "9000:9000/udp"   # UDP : la région (ajouter 9001/udp, 9002/udp... par région en plus)
+    volumes:
+      - ./opensim/config/overrides.ini:/opt/opensim/bin/config/overrides.ini:ro  # éditer puis restart
+      - regions:/opt/opensim/bin/Regions             # Regions.ini (UUID stables)
+      - ./backups:/opt/opensim/bin/backups            # save oar / save iar
+      - scripts:/opt/opensim/bin/ScriptEngines        # état des scripts LSL compilés
+    stop_grace_period: 60s   # laisse le temps à OpenSim de sauvegarder les objets
+
+volumes:
+  db-data:
+  regions:
+  scripts:

@@ -1,0 +1,78 @@
+# OpenSim sur Coolify, à partir de l'image construite par GitHub Actions (GHCR)
+# Coolify : + New Resource > Docker Compose Empty > coller ce fichier
+#
+#  - Remplacer TON_COMPTE par ton nom d'utilisateur GitHub (en minuscules)
+#  - Production : OPENSIM_IMAGE_TAG=stable, OPENSIM_PORT=9000
+#  - Instance de test des RC : 2e ressource, OPENSIM_IMAGE_TAG=rc, OPENSIM_PORT=9100
+#  - Mots de passe générés par Coolify (SERVICE_PASSWORD_*) ; le mot de passe du compte
+#    admin dans le viewer = SERVICE_PASSWORD_OWNER (onglet Environment Variables)
+#  - PAS de domaine : OpenSim publie lui-même son port en TCP + UDP
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${SERVICE_PASSWORD_MYSQLROOT}
+      MARIADB_DATABASE: opensim
+      MARIADB_USER: opensim
+      MARIADB_PASSWORD: ${SERVICE_PASSWORD_MYSQL}
+    command:
+      - --max-allowed-packet=128M
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-512M}
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - opensim-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  opensim:
+    image: ghcr.io/TON_COMPTE/opensim:${OPENSIM_IMAGE_TAG:-stable}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    environment:
+      # DNS (enregistrement A, sans proxy Cloudflare) ou IP publique du serveur
+      OPENSIM_PUBLIC_HOST: ${OPENSIM_PUBLIC_HOST:?}
+      # Port HTTP (TCP) et de la 1re région (UDP) ; doit être identique des deux côtés de "ports"
+      OPENSIM_PORT: ${OPENSIM_PORT:-9000}
+      OPENSIM_HYPERGRID: ${OPENSIM_HYPERGRID:-false}
+      OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-Mon OpenSim}
+      OPENSIM_GRID_NICK: ${OPENSIM_GRID_NICK:-monopensim}
+      OPENSIM_WELCOME: ${OPENSIM_WELCOME:-Bienvenue !}
+      OPENSIM_PHYSICS: ${OPENSIM_PHYSICS:-BulletSim}
+      OPENSIM_REGION_NAME: ${OPENSIM_REGION_NAME:-Ma Region}
+      OPENSIM_REGION_LOCATION: ${OPENSIM_REGION_LOCATION:-1000,1000}
+      OPENSIM_REGION_SIZE: ${OPENSIM_REGION_SIZE:-256}
+      OPENSIM_ESTATE_NAME: ${OPENSIM_ESTATE_NAME:-Mon Estate}
+      OPENSIM_OWNER_FIRSTNAME: ${OPENSIM_OWNER_FIRSTNAME:-Admin}
+      OPENSIM_OWNER_LASTNAME: ${OPENSIM_OWNER_LASTNAME:-Opensim}
+      OPENSIM_OWNER_PASSWORD: ${SERVICE_PASSWORD_OWNER}
+      OPENSIM_OWNER_EMAIL: ${OPENSIM_OWNER_EMAIL:-admin@example.com}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: opensim
+      MYSQL_USER: opensim
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQL}
+    ports:
+      - "${OPENSIM_PORT:-9000}:${OPENSIM_PORT:-9000}/tcp"
+      - "${OPENSIM_PORT:-9000}:${OPENSIM_PORT:-9000}/udp"
+      # une ligne "<port>:<port>/udp" de plus par région ajoutée
+    volumes:
+      - opensim-regions:/opt/opensim/bin/Regions
+      - opensim-backups:/opt/opensim/bin/backups
+      - opensim-scripts:/opt/opensim/bin/ScriptEngines
+    stop_grace_period: 60s
+
+volumes:
+  opensim-db:
+  opensim-regions:
+  opensim-backups:
+  opensim-scripts:

@@ -1,0 +1,16 @@
+# PR automatiques pour garder à jour les actions GitHub et les images de base (.NET, MariaDB).
+# Fusionner une PR qui touche opensim/ relance "Build image" : nouvelle RC à valider.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /opensim
+    schedule:
+      interval: weekly
+    ignore:
+      # OpenSim cible .NET 8 : on choisit le runtime via l'input du build, pas via Dependabot
+      - dependency-name: "mcr.microsoft.com/dotnet/*"
+        update-types: ["version-update:semver-major"]

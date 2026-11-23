@@ -1,0 +1,105 @@
+# Vérifie régulièrement si OpenSim a publié du nouveau :
+#  - une nouvelle branche de version (ex: 0.9.3.1 après 0.9.3.0)
+#  - ou de nouveaux correctifs sur la branche de version actuelle
+# Si l'image correspondante n'existe pas encore sur GHCR : build RC + issue "à valider".
+name: Check upstream
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # tous les jours à 04:17 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Reconstruire même si rien n'a changé (ex: correctifs de l'image de base)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+  issues: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.latest.outputs.ref }}
+      tag: ${{ steps.latest.outputs.tag }}
+      build: ${{ steps.exists.outputs.build }}
+    steps:
+      - name: Dernière version publiée par OpenSim
+        id: latest
+        run: |
+          set -euo pipefail
+          # Les versions publiées sont des branches au format 0.9.3.0
+          line="$(git ls-remote --heads https://github.com/opensim/opensim.git \
+                  | sed 's|refs/heads/||' \
+                  | awk '$2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print $2" "$1}' \
+                  | sort -V | tail -n1)"
+          ref="${line%% *}"
+          sha="${line##* }"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "tag=${ref}-${sha:0:7}" >> "$GITHUB_OUTPUT"
+          echo "Dernière version amont : ${ref} @ ${sha:0:7}"
+
+      - name: Login GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Déjà construite ?
+        id: exists
+        env:
+          OWNER: ${{ github.repository_owner }}
+          TAG: ${{ steps.latest.outputs.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          image="ghcr.io/${OWNER,,}/opensim"
+          if [ "${FORCE}" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"; echo "Build forcé"
+          elif docker buildx imagetools inspect "${image}:${TAG}" > /dev/null 2>&1; then
+            echo "build=false" >> "$GITHUB_OUTPUT"; echo "${image}:${TAG} existe déjà, rien à faire"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"; echo "${image}:${TAG} absente : nouvelle RC"
+          fi
+
+  build:
+    needs: detect
+    if: needs.detect.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      opensim_ref: ${{ needs.detect.outputs.ref }}
+    secrets: inherit
+
+  notify:
+    needs: [detect, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ouvrir une issue de validation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REF: ${{ needs.detect.outputs.ref }}
+          SOURCE_TAG: ${{ needs.build.outputs.source_tag }}
+          CANDIDATE: ${{ needs.build.outputs.candidate_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title "RC OpenSim ${SOURCE_TAG} à valider (${CANDIDATE})" \
+            --body "$(cat <<EOF
+          Une nouvelle image candidate a été construite : **${SOURCE_TAG}** (tag immuable \`${CANDIDATE}\`).
+
+          Build : ${RUN_URL}
+          Changements amont : https://github.com/opensim/opensim/commits/${REF}
+
+          À vérifier sur l'instance RC (tag \`rc\`) :
+          - [ ] le conteneur passe en healthy
+          - [ ] connexion avec Firestorm
+          - [ ] objets et scripts présents sur la région
+          - [ ] téléport / inventaire / chat OK
+
+          Si tout est bon : Actions > **Promote to stable** > Run workflow avec \`${CANDIDATE}\`, puis fermer cette issue.
+          EOF
+          )"
