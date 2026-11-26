@@ -1,0 +1,17 @@
+version: 2
+
+updates:
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /opensim
+    schedule:
+      interval: weekly
+    ignore:
+      # OpenSim targets .NET 8. The runtime major is picked with the build input, not here.
+      - dependency-name: "mcr.microsoft.com/dotnet/*"
+        update-types: ["version-update:semver-major"]

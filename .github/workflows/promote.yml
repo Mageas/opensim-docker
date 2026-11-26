@@ -1,0 +1,114 @@
+name: Promote to stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: "Tag to promote, e.g. build-42 (from the issue or the build summary)"
+        required: true
+      deploy:
+        description: "Redeploy production on Coolify"
+        type: boolean
+        default: true
+
+# contents: write commits the new OPENSIM_REF.
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # No rebuild: stable points to the exact digest that was tested as rc.
+      - name: Tag the candidate as stable
+        id: promote
+        env:
+          OWNER: ${{ github.repository_owner }}
+          CANDIDATE: ${{ inputs.candidate }}
+        run: |
+          set -euo pipefail
+
+          image="ghcr.io/${OWNER,,}/opensim"
+
+          digest="$(docker buildx imagetools inspect "${image}:${CANDIDATE}" --format '{{json .Manifest}}' | jq -r .digest)"
+
+          # A multi-arch index lists one config per platform, a single image has one config.
+          version="$(docker buildx imagetools inspect "${image}:${CANDIDATE}" --format '{{json .Image}}' \
+            | jq -r 'if has("config") then .config.Labels["org.opencontainers.image.version"]
+                     else (to_entries[0].value.config.Labels["org.opencontainers.image.version"]) end')"
+
+          if [ -z "${version}" ] || [ "${version}" = "null" ]; then
+            echo "::error::No version label on ${image}:${CANDIDATE}"
+            exit 1
+          fi
+
+          echo "Candidate ${CANDIDATE} is OpenSim ${version} (${digest})"
+
+          if docker buildx imagetools inspect "${image}:stable" > /dev/null 2>&1; then
+            docker buildx imagetools create -t "${image}:stable-previous" "${image}:stable"
+          fi
+
+          docker buildx imagetools create -t "${image}:stable" -t "${image}:${version}" "${image}@${digest}"
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### ${CANDIDATE} promoted to stable"
+            echo ""
+            echo "- \`${image}:stable\` and \`${image}:${version}\` point to \`${digest}\`"
+            echo "- the previous stable is kept as \`${image}:stable-previous\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Pushed with GITHUB_TOKEN, so this commit does not trigger Build image.
+      - name: Update OPENSIM_REF
+        env:
+          VERSION: ${{ steps.promote.outputs.version }}
+        run: |
+          if [ "$(tr -d '[:space:]' < OPENSIM_REF)" = "${VERSION}" ]; then
+            echo "OPENSIM_REF is already ${VERSION}"
+            exit 0
+          fi
+
+          echo "${VERSION}" > OPENSIM_REF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Promote OpenSim ${VERSION} to stable"
+          git push
+
+      - name: Redeploy production on Coolify
+        if: ${{ inputs.deploy }}
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          SERVICE_UUID: ${{ secrets.COOLIFY_PROD_SERVICE_UUID }}
+        run: |
+          if [ -z "${COOLIFY_URL}" ] || [ -z "${COOLIFY_TOKEN}" ] || [ -z "${SERVICE_UUID}" ]; then
+            echo "Coolify production secrets not set: run Pull Latest Images & Restart in Coolify"
+            exit 0
+          fi
+
+          # latest=true pulls the image again; a plain restart would reuse the cached one.
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            -H "Accept: application/json" \
+            "${COOLIFY_URL%/}/api/v1/services/${SERVICE_UUID}/restart?latest=true"

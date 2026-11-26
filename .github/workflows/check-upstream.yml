@@ -1,0 +1,115 @@
+name: Check upstream
+
+on:
+  schedule:
+    # Off the hour: GitHub delays scheduled runs at the top of the hour.
+    - cron: "17 4 * * *"
+
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if nothing changed upstream (e.g. base image fixes)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+  issues: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+
+    outputs:
+      ref: ${{ steps.latest.outputs.ref }}
+      tag: ${{ steps.latest.outputs.tag }}
+      build: ${{ steps.exists.outputs.build }}
+
+    steps:
+      - name: Find the latest OpenSim release
+        id: latest
+        run: |
+          set -euo pipefail
+
+          # Releases are branches named like 0.9.3.0.
+          line="$(git ls-remote --heads https://github.com/opensim/opensim.git \
+                  | sed 's|refs/heads/||' \
+                  | awk '$2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print $2" "$1}' \
+                  | sort -V | tail -n1)"
+          ref="${line%% *}"
+          sha="${line##* }"
+
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "tag=${ref}-${sha:0:7}" >> "$GITHUB_OUTPUT"
+          echo "Latest upstream release: ${ref} @ ${sha:0:7}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The <version>-<commit> tag exists once that exact upstream commit has been built.
+      - name: Check if already built
+        id: exists
+        env:
+          OWNER: ${{ github.repository_owner }}
+          TAG: ${{ steps.latest.outputs.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          image="ghcr.io/${OWNER,,}/opensim"
+
+          if [ "${FORCE}" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "Forced build"
+          elif docker buildx imagetools inspect "${image}:${TAG}" > /dev/null 2>&1; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "${image}:${TAG} already exists"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "${image}:${TAG} is missing: building a new RC"
+          fi
+
+  build:
+    needs: detect
+    if: needs.detect.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      opensim_ref: ${{ needs.detect.outputs.ref }}
+    secrets: inherit
+
+  # Skipped along with build when nothing changed.
+  notify:
+    needs: [detect, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Open a validation issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REF: ${{ needs.detect.outputs.ref }}
+          SOURCE_TAG: ${{ needs.build.outputs.source_tag }}
+          CANDIDATE: ${{ needs.build.outputs.candidate_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title "Validate OpenSim RC ${SOURCE_TAG} (${CANDIDATE})" \
+            --body "$(cat <<EOF
+          A new release candidate is built: **${SOURCE_TAG}**, immutable tag \`${CANDIDATE}\`.
+
+          Build: ${RUN_URL}
+          Upstream changes: https://github.com/opensim/opensim/commits/${REF}
+
+          Check on the RC instance (tag \`rc\`):
+
+          - [ ] the container turns healthy
+          - [ ] Firestorm logs in
+          - [ ] objects and scripts are still on the region
+          - [ ] teleport, inventory and chat work
+
+          Then run **Actions > Promote to stable** with \`${CANDIDATE}\` and close this issue.
+          EOF
+          )"

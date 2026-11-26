@@ -1,0 +1,89 @@
+name: opensim
+
+services:
+
+  db:
+    image: mariadb:11.4
+    container_name: opensim-db
+    restart: unless-stopped
+
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MARIADB_USER: ${MYSQL_USER:-opensim}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+
+    # Assets (textures, meshes, sounds) are stored as blobs, larger than the default packet limit.
+    command:
+      - --max-allowed-packet=128M
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-512M}
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+    volumes:
+      - db-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+
+  opensim:
+    build:
+      context: ./opensim
+      args:
+        OPENSIM_VERSION: ${OPENSIM_VERSION:-0.9.3.0}
+    image: opensim-local:${OPENSIM_VERSION:-0.9.3.0}
+    container_name: opensim
+    restart: unless-stopped
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Keeps the OpenSim console reachable with `docker attach opensim`.
+    stdin_open: true
+    tty: true
+
+    environment:
+      OPENSIM_PUBLIC_HOST: ${OPENSIM_PUBLIC_HOST:?set OPENSIM_PUBLIC_HOST in .env}
+      OPENSIM_HYPERGRID: ${OPENSIM_HYPERGRID:-false}
+      OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-My OpenSim}
+      OPENSIM_GRID_NICK: ${OPENSIM_GRID_NICK:-myopensim}
+      OPENSIM_WELCOME: ${OPENSIM_WELCOME:-Welcome!}
+      OPENSIM_PHYSICS: ${OPENSIM_PHYSICS:-BulletSim}
+      OPENSIM_REGION_NAME: ${OPENSIM_REGION_NAME:-My Region}
+      OPENSIM_REGION_LOCATION: ${OPENSIM_REGION_LOCATION:-1000,1000}
+      OPENSIM_REGION_SIZE: ${OPENSIM_REGION_SIZE:-256}
+      OPENSIM_ESTATE_NAME: ${OPENSIM_ESTATE_NAME:-My Estate}
+      OPENSIM_OWNER_FIRSTNAME: ${OPENSIM_OWNER_FIRSTNAME:?set OPENSIM_OWNER_FIRSTNAME in .env}
+      OPENSIM_OWNER_LASTNAME: ${OPENSIM_OWNER_LASTNAME:?set OPENSIM_OWNER_LASTNAME in .env}
+      OPENSIM_OWNER_PASSWORD: ${OPENSIM_OWNER_PASSWORD:?set OPENSIM_OWNER_PASSWORD in .env}
+      OPENSIM_OWNER_EMAIL: ${OPENSIM_OWNER_EMAIL:-admin@example.com}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MYSQL_USER: ${MYSQL_USER:-opensim}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    # One more "<port>:<port>/udp" line per extra region.
+    ports:
+      - "9000:9000/tcp"
+      - "9000:9000/udp"
+
+    volumes:
+      - ./opensim/config/overrides.ini:/opt/opensim/bin/config/overrides.ini:ro
+      - regions:/opt/opensim/bin/Regions
+      - ./backups:/opt/opensim/bin/backups
+      - scripts:/opt/opensim/bin/ScriptEngines
+
+    # OpenSim saves changed objects on shutdown.
+    stop_grace_period: 60s
+
+
+volumes:
+  db-data:
+  regions:
+  scripts:

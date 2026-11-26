@@ -1,0 +1,174 @@
+name: Build image
+
+on:
+  workflow_dispatch:
+    inputs:
+      opensim_ref:
+        description: "OpenSim branch or tag (empty: the content of OPENSIM_REF)"
+        required: false
+        default: ""
+      dotnet_runtime:
+        description: ".NET runtime of the image"
+        type: choice
+        options: ["8.0", "10.0"]
+        default: "8.0"
+      deploy_rc:
+        description: "Redeploy the RC instance on Coolify"
+        type: boolean
+        default: true
+
+  push:
+    branches: [main]
+    paths:
+      - "opensim/**"
+      - "OPENSIM_REF"
+      - ".github/workflows/build.yml"
+
+  workflow_call:
+    inputs:
+      opensim_ref:
+        type: string
+        required: true
+      dotnet_runtime:
+        type: string
+        default: "8.0"
+      deploy_rc:
+        type: boolean
+        default: true
+    outputs:
+      candidate_tag:
+        description: "Immutable tag of the image, e.g. build-42"
+        value: ${{ jobs.build.outputs.candidate_tag }}
+      source_tag:
+        description: "OpenSim version and upstream commit, e.g. 0.9.3.0-1f4a6dd"
+        value: ${{ jobs.build.outputs.source_tag }}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-image
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    outputs:
+      candidate_tag: ${{ steps.meta.outputs.candidate_tag }}
+      source_tag: ${{ steps.meta.outputs.source_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve OpenSim version and commit
+        id: meta
+        env:
+          INPUT_REF: ${{ inputs.opensim_ref }}
+          INPUT_RUNTIME: ${{ inputs.dotnet_runtime }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+
+          ref="${INPUT_REF:-}"
+          [ -n "$ref" ] || ref="$(tr -d '[:space:]' < OPENSIM_REF)"
+          runtime="${INPUT_RUNTIME:-8.0}"
+
+          # OpenSim releases are branches (0.9.3.0), but a tag works too.
+          sha="$(git ls-remote https://github.com/opensim/opensim.git "refs/heads/${ref}" "refs/tags/${ref}" | head -n1 | cut -f1)"
+          if [ -z "$sha" ]; then
+            echo "::error::OpenSim branch or tag not found: ${ref}"
+            exit 1
+          fi
+
+          # GHCR rejects uppercase in image names.
+          image="ghcr.io/${OWNER,,}/opensim"
+
+          suffix=""
+          [ "$runtime" = "8.0" ] || suffix="-net${runtime%%.*}"
+
+          {
+            echo "ref=${ref}"
+            echo "sha=${sha}"
+            echo "runtime=${runtime}"
+            echo "image=${image}"
+            echo "source_tag=${ref}-${sha:0:7}${suffix}"
+            echo "candidate_tag=build-${RUN_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "OpenSim ${ref} @ ${sha:0:7}, .NET ${runtime} -> ${image}"
+
+      - name: Set up QEMU
+        if: contains(vars.IMAGE_PLATFORMS, 'arm64')
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./opensim
+          push: true
+          platforms: ${{ vars.IMAGE_PLATFORMS || 'linux/amd64' }}
+          build-args: |
+            OPENSIM_VERSION=${{ steps.meta.outputs.ref }}
+            OPENSIM_COMMIT=${{ steps.meta.outputs.sha }}
+            DOTNET_RUNTIME=${{ steps.meta.outputs.runtime }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:rc
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.source_tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.candidate_tag }}
+          # Promote reads the OpenSim version back from this label.
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.ref }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.sha }}
+            io.opensim.dotnet-runtime=${{ steps.meta.outputs.runtime }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write summary
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SOURCE_TAG: ${{ steps.meta.outputs.source_tag }}
+          CANDIDATE: ${{ steps.meta.outputs.candidate_tag }}
+        run: |
+          {
+            echo "### Release candidate published"
+            echo ""
+            echo "| Tag | Use |"
+            echo "| --- | --- |"
+            echo "| \`${IMAGE}:rc\` | RC instance on Coolify |"
+            echo "| \`${IMAGE}:${SOURCE_TAG}\` | OpenSim version and upstream commit |"
+            echo "| \`${IMAGE}:${CANDIDATE}\` | Immutable tag to give to **Promote to stable** |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Redeploy the RC instance on Coolify
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_rc }}
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          SERVICE_UUID: ${{ secrets.COOLIFY_RC_SERVICE_UUID }}
+        run: |
+          if [ -z "${COOLIFY_URL}" ] || [ -z "${COOLIFY_TOKEN}" ] || [ -z "${SERVICE_UUID}" ]; then
+            echo "Coolify RC secrets not set: skipped"
+            exit 0
+          fi
+
+          # latest=true pulls the image again; a plain restart would reuse the cached one.
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            -H "Accept: application/json" \
+            "${COOLIFY_URL%/}/api/v1/services/${SERVICE_UUID}/restart?latest=true"
