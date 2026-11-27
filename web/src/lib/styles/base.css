@@ -1,0 +1,275 @@
+/* Element defaults and shared classes. No transitions or gradients: the interface stays still. */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	font-family: var(--font-family);
+	font-size: var(--font-size-base);
+	line-height: var(--line-height);
+	color: var(--color-text);
+	background: var(--color-page);
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ol,
+ul {
+	margin: 0;
+}
+
+h1,
+h2,
+h3 {
+	line-height: 1.2;
+	letter-spacing: var(--letter-spacing-tight);
+}
+
+h1 {
+	font-size: var(--font-size-title);
+}
+
+h2 {
+	font-size: var(--font-size-heading);
+}
+
+a {
+	color: var(--color-accent);
+	text-underline-offset: 0.2em;
+}
+
+a:hover {
+	color: var(--color-accent-hover);
+}
+
+code {
+	font-family: var(--font-family-mono);
+	font-size: 0.95em;
+}
+
+:focus-visible {
+	outline: var(--focus-width) solid var(--color-focus);
+	outline-offset: 2px;
+}
+
+input,
+button {
+	font: inherit;
+	color: inherit;
+}
+
+.app {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* Layout */
+
+.container {
+	width: 100%;
+	max-width: var(--width-page);
+	margin-inline: auto;
+	padding-inline: var(--space-gutter);
+}
+
+.stack {
+	display: grid;
+	gap: var(--space-4);
+	align-content: start;
+}
+
+.stack-large {
+	display: grid;
+	gap: var(--space-8);
+	align-content: start;
+}
+
+/* Two columns side by side when each gets its minimum width, one above the other otherwise. */
+.split {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--width-column)), 1fr));
+	gap: var(--space-8);
+	align-items: start;
+}
+
+/* A form beside its explanation, kept to a readable width. */
+.form-page {
+	max-width: var(--width-form);
+	margin-inline: auto;
+}
+
+.card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--width-card)), 1fr));
+	gap: var(--space-6);
+	align-items: start;
+}
+
+.card {
+	padding: clamp(var(--space-5), 1rem + 1.5vw, var(--space-8));
+	border: var(--border-width) solid var(--color-border-subtle);
+	border-radius: var(--radius);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-card);
+}
+
+.panel {
+	padding: clamp(var(--space-5), 1rem + 1.5vw, var(--space-8));
+	border-radius: var(--radius);
+	background: var(--color-surface-muted);
+}
+
+/* Text */
+
+.eyebrow {
+	font-size: var(--font-size-small);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--color-accent);
+}
+
+.lead {
+	font-size: var(--font-size-lead);
+	color: var(--color-text-muted);
+}
+
+.muted {
+	color: var(--color-text-muted);
+}
+
+.small {
+	font-size: var(--font-size-small);
+}
+
+.checklist {
+	display: grid;
+	gap: var(--space-2);
+	padding-left: var(--space-5);
+}
+
+.checklist li::marker {
+	color: var(--color-accent);
+}
+
+/* Buttons */
+
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-5);
+	border: var(--border-width) solid var(--color-accent);
+	border-radius: var(--radius-small);
+	background: var(--color-accent);
+	color: var(--color-on-accent);
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.button:hover {
+	border-color: var(--color-accent-hover);
+	background: var(--color-accent-hover);
+	color: var(--color-on-accent);
+}
+
+.button.secondary {
+	border-color: var(--color-border-subtle);
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
+.button.secondary:hover {
+	border-color: var(--color-border);
+	color: var(--color-text);
+}
+
+.button.danger {
+	border-color: var(--color-danger);
+	background: var(--color-danger);
+	color: var(--color-on-danger);
+}
+
+.button.danger:hover {
+	border-color: var(--color-danger-hover);
+	background: var(--color-danger-hover);
+}
+
+.button.danger-outline {
+	border-color: var(--color-danger);
+	background: transparent;
+	color: var(--color-danger);
+}
+
+.button.danger-outline:hover {
+	background: var(--color-danger-soft);
+	color: var(--color-danger);
+}
+
+.button.small {
+	min-height: 2.25rem;
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--font-size-small);
+}
+
+.button.full {
+	width: 100%;
+}
+
+.link-button {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-accent);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+
+/* Messages */
+
+.alert,
+.notice {
+	padding: var(--space-3) var(--space-4);
+	border-left: var(--space-1) solid;
+	border-radius: var(--radius-small);
+	font-weight: 600;
+}
+
+.alert {
+	border-color: var(--color-danger);
+	background: var(--color-danger-soft);
+	color: var(--color-danger);
+}
+
+.notice {
+	border-color: var(--color-success);
+	background: var(--color-success-soft);
+	color: var(--color-success);
+}

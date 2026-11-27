@@ -1,0 +1,7 @@
+engineStrict: true
+allowBuilds:
+  esbuild: true
+  # Optional native speedups pulled in by testcontainers; the pure JS fallbacks are enough for tests.
+  cpu-features: false
+  protobufjs: false
+  ssh2: false

@@ -1,0 +1,102 @@
+/*
+ * Theme tokens. Components read only the semantic tokens; the palette stays in this file.
+ * Each color holds its light and dark value: light-dark() picks one from color-scheme,
+ * which follows the system unless the visitor chose a theme (data-theme on <html>).
+ * Layouts size themselves with grid and clamp(), so the theme needs no breakpoint.
+ */
+
+:root {
+	color-scheme: light dark;
+
+	--palette-white: #ffffff;
+	--palette-slate-50: #f6f7fb;
+	--palette-slate-100: #eef0f6;
+	--palette-slate-200: #e3e6ee;
+	--palette-slate-300: #a3a9b8;
+	--palette-slate-500: #6b7280;
+	--palette-slate-600: #4b5563;
+	--palette-slate-800: #262b3a;
+	--palette-slate-850: #1c2030;
+	--palette-slate-900: #151821;
+	--palette-slate-950: #0b0d12;
+	--palette-ink: #111827;
+	--palette-indigo-50: #eef2ff;
+	--palette-indigo-200: #c7d2fe;
+	--palette-indigo-300: #a5b4fc;
+	--palette-indigo-700: #4338ca;
+	--palette-indigo-800: #3730a3;
+	--palette-indigo-950: #1e2140;
+	--palette-green-50: #ecfdf3;
+	--palette-green-300: #86efac;
+	--palette-green-700: #15803d;
+	--palette-green-950: #0f2a1b;
+	--palette-red-50: #fef2f2;
+	--palette-red-300: #fca5a5;
+	--palette-red-700: #b91c1c;
+	--palette-red-800: #991b1b;
+	--palette-red-950: #2d1416;
+
+	--color-page: light-dark(var(--palette-slate-50), var(--palette-slate-950));
+	--color-surface: light-dark(var(--palette-white), var(--palette-slate-900));
+	--color-surface-muted: light-dark(var(--palette-slate-100), var(--palette-slate-850));
+	--color-text: light-dark(var(--palette-ink), var(--palette-slate-200));
+	--color-text-muted: light-dark(var(--palette-slate-600), var(--palette-slate-300));
+	--color-border: var(--palette-slate-500);
+	--color-border-subtle: light-dark(var(--palette-slate-200), var(--palette-slate-800));
+	--color-accent: light-dark(var(--palette-indigo-700), var(--palette-indigo-300));
+	--color-accent-hover: light-dark(var(--palette-indigo-800), var(--palette-indigo-200));
+	--color-accent-soft: light-dark(var(--palette-indigo-50), var(--palette-indigo-950));
+	--color-on-accent: light-dark(var(--palette-white), var(--palette-slate-950));
+	--color-success: light-dark(var(--palette-green-700), var(--palette-green-300));
+	--color-success-soft: light-dark(var(--palette-green-50), var(--palette-green-950));
+	--color-danger: light-dark(var(--palette-red-700), var(--palette-red-300));
+	--color-danger-hover: light-dark(var(--palette-red-800), var(--palette-red-50));
+	--color-danger-soft: light-dark(var(--palette-red-50), var(--palette-red-950));
+	--color-on-danger: light-dark(var(--palette-white), var(--palette-slate-950));
+	--color-focus: light-dark(var(--palette-indigo-700), var(--palette-indigo-300));
+	--color-shadow: light-dark(rgb(17 24 39 / 0.05), transparent);
+
+	--shadow-card: 0 1px 2px var(--color-shadow), 0 1px 3px var(--color-shadow);
+
+	--font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+	--font-family-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	--font-size-small: 0.875rem;
+	--font-size-base: 1rem;
+	--font-size-lead: 1.125rem;
+	--font-size-heading: 1.125rem;
+	--font-size-title: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+	--font-size-display: clamp(2rem, 1.3rem + 2.8vw, 3.25rem);
+	--line-height: 1.6;
+	--letter-spacing-tight: -0.02em;
+
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.25rem;
+	--space-6: 1.5rem;
+	--space-8: 2rem;
+	--space-12: 3rem;
+	--space-section: clamp(2rem, 1rem + 4vw, 4rem);
+	--space-gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+
+	--radius-small: 0.5rem;
+	--radius: 0.75rem;
+	--radius-round: 999px;
+	--border-width: 1px;
+	--focus-width: 3px;
+	--target-size: 2.75rem;
+
+	--width-page: 72rem;
+	--width-form: 64rem;
+	--width-column: 22rem;
+	--width-card: 18rem;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}

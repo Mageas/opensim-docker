@@ -1,0 +1,409 @@
+{
+	"source": "OpenSim 0.9.3.0 (1f4a6dd) console `create user`, standalone, CreateDefaultAvatarEntries = true; ServiceURLs as stored before the first login; Email left out (the portal asks for none)",
+	"account": {
+		"ScopeID": "00000000-0000-0000-0000-000000000000",
+		"ServiceURLs": "HomeURI= InventoryServerURI= AssetServerURI=",
+		"UserLevel": 0,
+		"UserFlags": 0,
+		"UserTitle": "",
+		"active": 1
+	},
+	"auth": {
+		"webLoginKey": "00000000-0000-0000-0000-000000000000",
+		"accountType": "UserAccount"
+	},
+	"folders": [
+		{
+			"name": "My Inventory",
+			"type": 8,
+			"version": 18,
+			"parent": null
+		},
+		{
+			"name": "Friends",
+			"type": 2,
+			"version": 2,
+			"parent": "Calling Cards"
+		},
+		{
+			"name": "All",
+			"type": 2,
+			"version": 1,
+			"parent": "Friends"
+		},
+		{
+			"name": "Animations",
+			"type": 20,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Body Parts",
+			"type": 13,
+			"version": 5,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Calling Cards",
+			"type": 2,
+			"version": 2,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Clothing",
+			"type": 5,
+			"version": 3,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Current Outfit",
+			"type": 46,
+			"version": 7,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Favorites",
+			"type": 23,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Gestures",
+			"type": 21,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Landmarks",
+			"type": 3,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Lost And Found",
+			"type": 16,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Notecards",
+			"type": 7,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Objects",
+			"type": 6,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Photo Album",
+			"type": 15,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Scripts",
+			"type": 10,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Settings",
+			"type": 56,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Sounds",
+			"type": 1,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Textures",
+			"type": 0,
+			"version": 1,
+			"parent": "My Inventory"
+		},
+		{
+			"name": "Trash",
+			"type": 14,
+			"version": 1,
+			"parent": "My Inventory"
+		}
+	],
+	"items": [
+		{
+			"folder": "Body Parts",
+			"name": "Default Eyes",
+			"asset": "4bb6fa4d-1cd2-498a-a84c-95c1a0e745a7",
+			"assetType": 13,
+			"invType": 18,
+			"flags": 3,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Body Parts",
+			"name": "Default Hair",
+			"asset": "d342e6c0-b9d2-11dc-95ff-0800200c9a66",
+			"assetType": 13,
+			"invType": 18,
+			"flags": 2,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Body Parts",
+			"name": "Default Shape",
+			"asset": "66c41e39-38f9-f75a-024e-585989bfab73",
+			"assetType": 13,
+			"invType": 18,
+			"flags": 0,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Body Parts",
+			"name": "Default Skin",
+			"asset": "77c41e39-38f9-f75a-024e-585989bbabbb",
+			"assetType": 13,
+			"invType": 18,
+			"flags": 1,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Clothing",
+			"name": "Default Pants",
+			"asset": "00000000-38f9-1111-024e-222222111120",
+			"assetType": 5,
+			"invType": 18,
+			"flags": 5,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Clothing",
+			"name": "Default Shirt",
+			"asset": "00000000-38f9-1111-024e-222222111110",
+			"assetType": 5,
+			"invType": 18,
+			"flags": 4,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 581632,
+			"currentPermissions": 581632,
+			"everyOnePermissions": 581632,
+			"groupPermissions": 581632,
+			"nextPermissions": 581632,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Eyes",
+			"asset": {
+				"item": "Body Parts/Default Eyes"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 3,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Hair",
+			"asset": {
+				"item": "Body Parts/Default Hair"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 2,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Pants",
+			"asset": {
+				"item": "Clothing/Default Pants"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 5,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Shape",
+			"asset": {
+				"item": "Body Parts/Default Shape"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 0,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Shirt",
+			"asset": {
+				"item": "Clothing/Default Shirt"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 4,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		},
+		{
+			"folder": "Current Outfit",
+			"name": "Default Skin",
+			"asset": {
+				"item": "Body Parts/Default Skin"
+			},
+			"assetType": 24,
+			"invType": 18,
+			"flags": 1,
+			"description": "",
+			"creatorIsOwner": true,
+			"basePermissions": 32768,
+			"currentPermissions": 32768,
+			"everyOnePermissions": 32768,
+			"groupPermissions": 32768,
+			"nextPermissions": 32768,
+			"salePrice": 0,
+			"saleType": 0,
+			"groupID": "00000000-0000-0000-0000-000000000000",
+			"groupOwned": 0
+		}
+	],
+	"avatar": {
+		"AvatarHeight": "1.9",
+		"AvatarType": "1",
+		"Serial": "0",
+		"VisualParams": "33,61,85,23,58,127,63,85,63,42,0,85,63,36,85,95,153,63,34,0,63,109,88,132,63,136,81,85,103,136,127,0,150,150,150,127,0,0,0,0,0,127,0,0,255,127,114,127,99,63,127,140,127,127,0,0,0,191,0,104,0,0,0,0,0,0,0,0,0,145,216,133,0,127,0,127,170,0,0,127,127,109,85,127,127,63,85,42,150,150,150,150,150,150,150,25,150,150,150,0,127,0,0,144,85,127,132,127,85,0,127,127,127,127,127,127,59,127,85,127,127,106,47,79,127,127,204,2,141,66,0,0,127,127,0,0,0,0,127,0,159,0,0,178,127,36,85,131,127,127,127,153,95,0,140,75,27,127,127,0,150,150,198,0,0,63,30,127,165,209,198,127,127,153,204,51,51,255,255,255,204,0,255,150,150,150,150,150,150,150,150,150,150,0,150,150,150,150,150,0,127,127,150,150,150,150,150,150,150,150,0,0,150,51,132,150,150,150",
+		"Wearable 0:0": {
+			"item": "Body Parts/Default Shape",
+			"asset": "66c41e39-38f9-f75a-024e-585989bfab73"
+		},
+		"Wearable 1:0": {
+			"item": "Body Parts/Default Skin",
+			"asset": "77c41e39-38f9-f75a-024e-585989bbabbb"
+		},
+		"Wearable 2:0": {
+			"item": "Body Parts/Default Hair",
+			"asset": "d342e6c0-b9d2-11dc-95ff-0800200c9a66"
+		},
+		"Wearable 3:0": {
+			"item": "Body Parts/Default Eyes",
+			"asset": "4bb6fa4d-1cd2-498a-a84c-95c1a0e745a7"
+		},
+		"Wearable 4:0": {
+			"item": "Clothing/Default Shirt",
+			"asset": "00000000-38f9-1111-024e-222222111110"
+		},
+		"Wearable 5:0": {
+			"item": "Clothing/Default Pants",
+			"asset": "00000000-38f9-1111-024e-222222111120"
+		}
+	}
+}
