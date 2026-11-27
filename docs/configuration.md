@@ -18,8 +18,9 @@
 | `OPENSIM_OWNER_LASTNAME` | `Opensim` | First start only |
 | `OPENSIM_OWNER_EMAIL` | `admin@example.com` | First start only |
 | `MYSQL_BUFFER_POOL` | `512M` | MariaDB memory |
+| `PORTAL_URL` | required | Coolify only: the account portal's address, e.g. `https://account.world.example.com` |
 
-On Coolify the passwords are generated: `SERVICE_PASSWORD_OWNER` for the admin account, `SERVICE_PASSWORD_MYSQL` and `SERVICE_PASSWORD_MYSQLROOT` for the database. Locally they come from `.env`.
+On Coolify the passwords are generated: `SERVICE_PASSWORD_OWNER` for the admin account, `SERVICE_PASSWORD_MYSQL` and `SERVICE_PASSWORD_MYSQLROOT` for the database, `SERVICE_PASSWORD_MYSQLWEB` for the portal's database account. Locally they come from `.env`.
 
 Any other OpenSim setting goes in [opensim/config/overrides.ini](../opensim/config/overrides.ini).
 

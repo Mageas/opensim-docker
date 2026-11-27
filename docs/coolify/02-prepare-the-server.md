@@ -5,7 +5,12 @@ OpenSim does not go through Coolify's proxy: the proxy only handles HTTP, and re
 
 ## DNS
 
-Point an A record to the server, e.g. `rc.world.example.com`. On Cloudflare, set it to **DNS only**.
+Point two A records to the server, both **DNS only** on Cloudflare:
+
+- the grid, e.g. `rc.world.example.com`
+- the account portal, e.g. `account.rc.world.example.com`
+
+The portal needs a name of its own: it is served over HTTPS, and browsers would then refuse plain HTTP on the grid's name.
 
 
 ## Firewall

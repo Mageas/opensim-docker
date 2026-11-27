@@ -19,6 +19,8 @@ Every day, **Check upstream** looks for a new OpenSim version. When it finds one
 
 Test the RC instance, then run **Promote to stable**: production updates.
 
+A push that changes `web/` tests and builds the portal, then deploys it to the RC instance. Coolify restarts the whole instance, OpenSim included.
+
 ---
 
 Previous: [4. Go live](04-go-live.md)

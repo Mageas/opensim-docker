@@ -1,6 +1,6 @@
 # OpenSim Docker
 
-OpenSimulator (standalone, MariaDB) in a Docker image built by GitHub Actions and deployed with Coolify.
+OpenSimulator (standalone, MariaDB) in a Docker image built by GitHub Actions and deployed with Coolify, with an [account portal](docs/portal.md) where visitors create their avatar.
 
 Each build is published as `rc` and runs on a test instance. Once you have checked it, **Promote to stable** turns it into the `stable` image that production runs.
 
@@ -13,7 +13,7 @@ Each build is published as `rc` and runs on a test instance. Once you have check
 4. [Go live](docs/coolify/04-go-live.md)
 5. [Automate deploys](docs/coolify/05-automate-deploys.md)
 
-Then: [Configuration](docs/configuration.md), [Operations](docs/operations.md) and [Load test from Windows](docs/load-test.md).
+Then: [Configuration](docs/configuration.md), [Operations](docs/operations.md), [Account portal](docs/portal.md) and [Load test from Windows](docs/load-test.md).
 
 
 ## Run locally
@@ -38,3 +38,5 @@ docker compose up -d --build
 ```
 
 When `docker compose logs opensim` shows `LOGINS ENABLED`, connect a viewer to `http://127.0.0.1:9000/`.
+
+The account portal is on `http://localhost:3000`.
