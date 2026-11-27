@@ -16,13 +16,23 @@ Useful commands: `create user`, `reset user password`, `show users`, `alert <mes
 
 ## Back up
 
+Back up the database and the region files, and copy both off the server.
+
 The database:
 
 ```bash
 docker exec db-<uuid> sh -c 'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" opensim' | gzip > opensim-$(date +%F).sql.gz
 ```
 
-Coolify can also schedule it, in the **Backups** of the `db` service.
+Coolify can also schedule it, in the **Backups** of the `db` service. It does not back up the volumes.
+
+The region files and the script state:
+
+```bash
+docker exec opensim-<uuid> tar czf - -C /opt/opensim/bin Regions ScriptEngines > opensim-files-$(date +%F).tgz
+```
+
+Without `Regions/`, a region is recreated with a new UUID and no longer loads its terrain and objects from the database. Without `ScriptEngines/`, scripts start again with their variables reset.
 
 A region, from the console: `save oar backups/region.oar`. Restore it with `load oar`.
 
@@ -51,36 +61,32 @@ Then add `"9001:9001/udp"` to the compose `ports`, open 9001/udp in the firewall
 
 ## Load test
 
-Test the RC instance from a separate VPS with Docker, `curl` and `jq`, so the bots do not share the server's CPU.
+Create the bot accounts on the server, then run the bots from a Windows PC: see [Load test from Windows](load-test.md). pCampBot fails on Linux and macOS with "Unable to connect to simulator".
 
-Create the bot accounts. This prints 20 commands to paste into the OpenSim console:
+
+### Create the bot accounts
+
+On the server, write 200 `create user` commands to a file and copy it into the container:
 
 ```bash
 BOTPASS=$(openssl rand -hex 8)
 echo "$BOTPASS"
 
-for i in $(seq 0 19); do
+for i in $(seq 0 199); do
   echo "create user Ima Bot$i $BOTPASS bot$i@example.com $(cat /proc/sys/kernel/random/uuid) ruth"
-done
+done > bots.txt
+
+docker cp bots.txt opensim-<uuid>:/opt/opensim/bin/bots.txt
 ```
 
-The names must be `Ima Bot0`, `Ima Bot1`..., without an underscore, whatever pCampBot's help says.
+In the OpenSim console, run `command-script bots.txt`, then check the last one with `show account Ima Bot199`.
 
-Start the bots on the VPS:
+The names must be `Ima Bot0`, `Ima Bot1`..., without an underscore, whatever pCampBot's help says. An account that already exists is skipped and keeps its old password.
 
-```bash
-docker run --rm -it --entrypoint sh ghcr.io/mageas/opensim:rc -c \
-  'cp pCampBot.ini.example pCampBot.ini && exec dotnet pCampBot.dll \
-   -loginuri http://rc.world.example.com:9100/ -firstname Ima -lastname Bot \
-   -password <BOTPASS> -botcount 20 -behaviours p'
-```
 
-In the pCampBot console, type `connect 1`, then `connect 4`, `connect 5`... every few minutes.
+### Compare .NET 8 and .NET 10
 
-Watch the region from a second terminal:
-
-```bash
-watch -n 10 "curl -s http://rc.world.example.com:9100/jsonSimStats | jq -c '{bots: .RootAg, dilation: .Dilatn, fps: .SimFPS, frame_ms: .TotlFt}'"
-```
-
-At rest: dilation 1, about 55 fps, a frame time near 18 ms. The region reaches its limit when dilation drops under 0.9 or the frame time climbs.
+1. Run the [load test](load-test.md) on the current `rc` image (.NET 8) and keep its CSV.
+2. Run **Build image** with `dotnet_runtime` set to `10.0`. It moves `rc` to .NET 10. Then **Pull Latest Images & Restart** the RC resource, unless the redeploy secrets are set.
+3. Run the same test, with the same bots and steps.
+4. Compare the two CSV step by step. To go back to .NET 8, run **Build image** with `8.0`.

@@ -13,7 +13,7 @@ Each build is published as `rc` and runs on a test instance. Once you have check
 4. [Go live](docs/coolify/04-go-live.md)
 5. [Automate deploys](docs/coolify/05-automate-deploys.md)
 
-Then: [Configuration](docs/configuration.md) and [Operations](docs/operations.md).
+Then: [Configuration](docs/configuration.md), [Operations](docs/operations.md) and [Load test from Windows](docs/load-test.md).
 
 
 ## Run locally
