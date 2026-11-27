@@ -83,6 +83,49 @@ services:
     stop_grace_period: 60s
 
 
+  # Creates the portal's MariaDB account and table, then exits.
+  web-setup:
+    build: ./web
+    image: opensim-web-local
+    restart: "no"
+
+    depends_on:
+      opensim:
+        condition: service_healthy
+
+    command: ["node", "scripts/setup-db.ts"]
+
+    environment:
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: opensim_web
+      MYSQL_PASSWORD: ${MYSQL_WEB_PASSWORD:?set MYSQL_WEB_PASSWORD in .env}
+
+
+  # Account portal on http://localhost:3000
+  web:
+    image: opensim-web-local
+    container_name: opensim-web
+    restart: unless-stopped
+
+    depends_on:
+      web-setup:
+        condition: service_completed_successfully
+
+    environment:
+      ORIGIN: http://localhost:3000
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MYSQL_USER: opensim_web
+      MYSQL_PASSWORD: ${MYSQL_WEB_PASSWORD}
+      OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-My OpenSim}
+      OPENSIM_LOGIN_URI: http://${OPENSIM_PUBLIC_HOST}:9000/
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+
 volumes:
   db-data:
   regions:

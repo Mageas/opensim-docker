@@ -15,3 +15,21 @@ updates:
       # OpenSim targets .NET 8. The runtime major is picked with the build input, not here.
       - dependency-name: "mcr.microsoft.com/dotnet/*"
         update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    groups:
+      # One pull request for the routine updates, one per breaking major.
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: docker
+    directory: /web
+    schedule:
+      interval: weekly
+    ignore:
+      # Node majors move with web/package.json "engines", by hand.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

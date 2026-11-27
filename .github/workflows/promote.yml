@@ -3,6 +3,11 @@ name: Promote to stable
 on:
   workflow_dispatch:
     inputs:
+      image:
+        description: "Image to promote"
+        type: choice
+        options: ["opensim", "opensim-web"]
+        default: "opensim"
       candidate:
         description: "Tag to promote, e.g. build-42 (from the issue or the build summary)"
         required: true
@@ -43,11 +48,12 @@ jobs:
         id: promote
         env:
           OWNER: ${{ github.repository_owner }}
+          IMAGE_NAME: ${{ inputs.image }}
           CANDIDATE: ${{ inputs.candidate }}
         run: |
           set -euo pipefail
 
-          image="ghcr.io/${OWNER,,}/opensim"
+          image="ghcr.io/${OWNER,,}/${IMAGE_NAME}"
 
           digest="$(docker buildx imagetools inspect "${image}:${CANDIDATE}" --format '{{json .Manifest}}' | jq -r .digest)"
 
@@ -61,7 +67,7 @@ jobs:
             exit 1
           fi
 
-          echo "Candidate ${CANDIDATE} is OpenSim ${version} (${digest})"
+          echo "Candidate ${CANDIDATE} is ${IMAGE_NAME} ${version} (${digest})"
 
           if docker buildx imagetools inspect "${image}:stable" > /dev/null 2>&1; then
             docker buildx imagetools create -t "${image}:stable-previous" "${image}:stable"
@@ -80,6 +86,7 @@ jobs:
 
       # Pushed with GITHUB_TOKEN, so this commit does not trigger Build image.
       - name: Update OPENSIM_REF
+        if: ${{ inputs.image == 'opensim' }}
         env:
           VERSION: ${{ steps.promote.outputs.version }}
         run: |

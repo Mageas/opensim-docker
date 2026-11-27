@@ -79,6 +79,50 @@ services:
     stop_grace_period: 60s
 
 
+  # Creates the portal's MariaDB account and table, then exits. It waits for OpenSim,
+  # which creates the tables the account gets rights on.
+  web-setup:
+    image: ghcr.io/mageas/opensim-web:${OPENSIM_IMAGE_TAG:-stable}
+    restart: "no"
+    exclude_from_hc: true
+
+    depends_on:
+      opensim:
+        condition: service_healthy
+
+    command: ["node", "scripts/setup-db.ts"]
+
+    environment:
+      MYSQL_HOST: db
+      MYSQL_DATABASE: opensim
+      MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_MYSQLROOT}
+      MYSQL_USER: opensim_web
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQLWEB}
+
+
+  # Account portal. Give it a host of its own in Domains, e.g. https://account.world.example.com:3000
+  web:
+    image: ghcr.io/mageas/opensim-web:${OPENSIM_IMAGE_TAG:-stable}
+    restart: unless-stopped
+
+    depends_on:
+      web-setup:
+        condition: service_completed_successfully
+
+    environment:
+      # The address in the browser, e.g. https://account.world.example.com
+      ORIGIN: ${PORTAL_URL:?}
+      # Coolify's proxy is the only hop: its X-Forwarded-For entry is the visitor.
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
+      MYSQL_HOST: db
+      MYSQL_DATABASE: opensim
+      MYSQL_USER: opensim_web
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQLWEB}
+      OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-My OpenSim}
+      OPENSIM_LOGIN_URI: http://${OPENSIM_PUBLIC_HOST}:${OPENSIM_PORT:-9000}/
+
+
 volumes:
   opensim-db:
   opensim-regions:

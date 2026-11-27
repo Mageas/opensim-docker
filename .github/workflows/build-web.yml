@@ -1,0 +1,162 @@
+name: Build web portal
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_rc:
+        description: "Redeploy the RC instance on Coolify"
+        type: boolean
+        default: true
+
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/build-web.yml"
+
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/build-web.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm check
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      # Testcontainers starts MariaDB with the runner's Docker.
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm test:e2e
+
+  build:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Name the image
+        id: meta
+        env:
+          OWNER: ${{ github.repository_owner }}
+          RUN_NUMBER: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+        run: |
+          # GHCR rejects uppercase in image names.
+          {
+            echo "image=ghcr.io/${OWNER,,}/opensim-web"
+            echo "version=${SHA:0:7}"
+            echo "candidate_tag=build-${RUN_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./web
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.meta.outputs.image }}:rc
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.candidate_tag }}
+          # Promote reads the version back from this label.
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Write summary
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          CANDIDATE: ${{ steps.meta.outputs.candidate_tag }}
+        run: |
+          {
+            echo "### Web portal release candidate published"
+            echo ""
+            echo "| Tag | Use |"
+            echo "| --- | --- |"
+            echo "| \`${IMAGE}:rc\` | RC instance on Coolify |"
+            echo "| \`${IMAGE}:${CANDIDATE}\` | Immutable tag to give to **Promote to stable** with image \`opensim-web\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Coolify restarts the whole RC service, OpenSim included.
+      - name: Redeploy the RC instance on Coolify
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_rc }}
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          SERVICE_UUID: ${{ secrets.COOLIFY_RC_SERVICE_UUID }}
+        run: |
+          if [ -z "${COOLIFY_URL}" ] || [ -z "${COOLIFY_TOKEN}" ] || [ -z "${SERVICE_UUID}" ]; then
+            echo "Coolify RC secrets not set: skipped"
+            exit 0
+          fi
+
+          # latest=true pulls the image again; a plain restart would reuse the cached one.
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            -H "Accept: application/json" \
+            "${COOLIFY_URL%/}/api/v1/services/${SERVICE_UUID}/restart?latest=true"
