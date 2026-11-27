@@ -13,7 +13,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "(svelte-kit sync && paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy baseLocale --silent) || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
