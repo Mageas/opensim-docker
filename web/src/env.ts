@@ -20,6 +20,13 @@ function port(value: string | undefined): number {
 	return number;
 }
 
+function flag(value: string | undefined): boolean {
+	if (!value) return true;
+	if (/^true$/i.test(value)) return true;
+	if (/^false$/i.test(value)) return false;
+	throw new Error('Must be true or false');
+}
+
 function httpUrl(value: string | undefined): string {
 	const url = required(value);
 	if (url && !/^https?:\/\/[^\s/]+/.test(url)) throw new Error('Not an http:// or https:// URL');
@@ -42,5 +49,9 @@ export const variables = defineEnvVars({
 	OPENSIM_LOGIN_URI: {
 		schema: httpUrl,
 		description: 'Login URI that viewers add, e.g. http://grid.example.org:9000/'
+	},
+	SIGNUP_ENABLED: {
+		schema: flag,
+		description: 'false closes account creation; true by default'
 	}
 });

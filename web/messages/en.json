@@ -13,6 +13,7 @@
 	"footer_opensim": "OpenSimulator",
 	"home_eyebrow": "OpenSimulator grid",
 	"home_intro": "Create your avatar in a minute, then explore {grid} with a viewer such as Firestorm.",
+	"home_intro_closed": "Log in to see your avatar's account on {grid}, change its password or delete it.",
 	"home_deleted": "Your account has been deleted.",
 	"connect_title": "Connect with a viewer",
 	"connect_step_install": "Install an OpenSim viewer, such as Firestorm.",
@@ -35,6 +36,7 @@
 	"signup_get_inventory": "An inventory with the usual folders",
 	"signup_get_viewer": "Access from Firestorm or any OpenSim viewer",
 	"signup_have_account": "Already have an avatar?",
+	"signup_closed": "Account creation is closed on {grid}. Ask the grid administrator for an avatar.",
 	"account_title": "My account",
 	"account_created_notice": "Your avatar is ready. Log in with your viewer using this name and password.",
 	"account_password_notice": "Your password has changed. Use the new one in your viewer.",
@@ -101,5 +103,6 @@
 	"error_account_online": "Your avatar is in the grid. Log out of the viewer, wait a minute, then try again.",
 	"error_account_estate_owner": "This avatar owns an estate. Ask the grid administrator to delete it.",
 	"error_account_privileged": "This avatar has administrator rights. Ask the grid administrator to delete it.",
-	"error_rate_limited": "Too many attempts. Wait a few minutes, then try again."
+	"error_rate_limited": "Too many attempts. Wait a few minutes, then try again.",
+	"error_signup_closed": "Account creation is closed."
 }

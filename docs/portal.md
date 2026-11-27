@@ -19,6 +19,8 @@ Deleting removes the account, its inventory, appearance, friends, profile, group
 
 The portal refuses to delete an avatar that is in the grid, an estate owner, or an administrator. Do those from the console.
 
+To close account creation, set `PORTAL_SIGNUP_ENABLED` to `false` and redeploy. The signup links disappear, and avatars made before keep their access.
+
 
 ## Develop
 

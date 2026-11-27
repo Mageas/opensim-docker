@@ -45,7 +45,11 @@
 
 	<aside class="panel stack" aria-labelledby="login-aside-title">
 		<h2 id="login-aside-title">{m.login_aside_title({ grid: data.grid.name })}</h2>
-		<p class="muted">{m.login_aside_text()}</p>
-		<p><a class="button secondary" href={resolve('/signup')}>{m.nav_signup()}</a></p>
+		{#if data.signupEnabled}
+			<p class="muted">{m.login_aside_text()}</p>
+			<p><a class="button secondary" href={resolve('/signup')}>{m.nav_signup()}</a></p>
+		{:else}
+			<p class="muted">{m.signup_closed({ grid: data.grid.name })}</p>
+		{/if}
 	</aside>
 </div>

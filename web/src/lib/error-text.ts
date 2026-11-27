@@ -25,7 +25,8 @@ const TEXT: Record<ErrorCode, () => string> = {
 	account_online: () => m.error_account_online(),
 	account_estate_owner: () => m.error_account_estate_owner(),
 	account_privileged: () => m.error_account_privileged(),
-	rate_limited: () => m.error_rate_limited()
+	rate_limited: () => m.error_rate_limited(),
+	signup_closed: () => m.error_signup_closed()
 };
 
 export function errorText(code: ErrorCode): string {

@@ -20,11 +20,18 @@
 		<section class="stack intro" aria-labelledby="home-title">
 			<p class="eyebrow">{m.home_eyebrow()}</p>
 			<h1 id="home-title">{data.grid.name}</h1>
-			<p class="lead">{m.home_intro({ grid: data.grid.name })}</p>
-			<p class="actions">
-				<a class="button" href={resolve('/signup')}>{m.nav_signup()}</a>
-				<a class="button secondary" href={resolve('/login')}>{m.nav_login()}</a>
-			</p>
+			{#if data.signupEnabled}
+				<p class="lead">{m.home_intro({ grid: data.grid.name })}</p>
+				<p class="actions">
+					<a class="button" href={resolve('/signup')}>{m.nav_signup()}</a>
+					<a class="button secondary" href={resolve('/login')}>{m.nav_login()}</a>
+				</p>
+			{:else}
+				<p class="lead">{m.home_intro_closed({ grid: data.grid.name })}</p>
+				<p class="actions">
+					<a class="button" href={resolve('/login')}>{m.nav_login()}</a>
+				</p>
+			{/if}
 		</section>
 		<ConnectInfo grid={data.grid} />
 	</div>

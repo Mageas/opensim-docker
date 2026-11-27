@@ -19,6 +19,7 @@
 | `OPENSIM_OWNER_EMAIL` | `admin@example.com` | First start only |
 | `MYSQL_BUFFER_POOL` | `512M` | MariaDB memory |
 | `PORTAL_URL` | required | Coolify only: the account portal's address, e.g. `https://account.world.example.com` |
+| `PORTAL_SIGNUP_ENABLED` | `true` | `false` closes account creation on the portal; existing avatars still log in |
 
 On Coolify the passwords are generated: `SERVICE_PASSWORD_OWNER` for the admin account, `SERVICE_PASSWORD_MYSQL` and `SERVICE_PASSWORD_MYSQLROOT` for the database, `SERVICE_PASSWORD_MYSQLWEB` for the portal's database account. Locally they come from `.env`.
 

@@ -41,11 +41,13 @@
 							{m.nav_login()}
 						</a>
 					</li>
-					<li>
-						<a class="button small" href={resolve('/signup')} aria-current={current('/signup')}>
-							{m.nav_signup()}
-						</a>
-					</li>
+					{#if data.signupEnabled}
+						<li>
+							<a class="button small" href={resolve('/signup')} aria-current={current('/signup')}>
+								{m.nav_signup()}
+							</a>
+						</li>
+					{/if}
 				{/if}
 				<li><ThemeSwitch /></li>
 			</ul>

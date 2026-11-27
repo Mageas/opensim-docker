@@ -29,7 +29,8 @@ export const ERROR_CODES = [
 	'account_online',
 	'account_estate_owner',
 	'account_privileged',
-	'rate_limited'
+	'rate_limited',
+	'signup_closed'
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

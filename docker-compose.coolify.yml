@@ -121,6 +121,8 @@ services:
       MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQLWEB}
       OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-My OpenSim}
       OPENSIM_LOGIN_URI: http://${OPENSIM_PUBLIC_HOST}:${OPENSIM_PORT:-9000}/
+      # false closes account creation.
+      SIGNUP_ENABLED: ${PORTAL_SIGNUP_ENABLED:-true}
 
 
 volumes:

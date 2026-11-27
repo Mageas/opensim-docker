@@ -17,6 +17,9 @@ export const actions: Actions = {
 		const typedName = formData.get('avatarName');
 		const values = { avatarName: typeof typedName === 'string' ? typedName : '' };
 
+		// The page hides the form, but a POST can still come straight here.
+		if (!runtime().signupEnabled) return fail(403, { values, error: 'signup_closed' as const });
+
 		const address = getClientAddress();
 		if (signupAttemptsByAddress.isLimited(address))
 			return fail(429, { values, error: 'rate_limited' as const });
