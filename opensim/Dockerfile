@@ -3,8 +3,9 @@
 ARG OPENSIM_VERSION=0.9.3.0
 ARG OPENSIM_COMMIT=""
 ARG DOTNET_RUNTIME=8.0
-# DTL/NSL Money Server, .NET 8 fork for OpenSim 0.9.3 (MIT).
-ARG MONEY_SERVER_COMMIT=a5f746bbd0d869760e08987529376a9626d655f4
+# DTL/NSL Money Server, .NET 8 fork for OpenSim 0.9.3 (MIT), from Mageas's fork of
+# ManfredAabye/opensimcurrencyserver-dotnet, which fixes a database connection leak.
+ARG MONEY_SERVER_COMMIT=a1bcaf9e0632081b1e0ac48e72bb4029b7039457
 
 
 # Build stage
@@ -33,7 +34,7 @@ RUN git clone --depth 1 --branch "${OPENSIM_VERSION}" https://github.com/opensim
 ARG MONEY_SERVER_COMMIT
 RUN git init --quiet /money \
  && git -C /money fetch --quiet --depth 1 \
-        https://github.com/ManfredAabye/opensimcurrencyserver-dotnet.git "${MONEY_SERVER_COMMIT}" \
+        https://github.com/Mageas/opensimcurrencyserver-dotnet.git "${MONEY_SERVER_COMMIT}" \
  && git -C /money checkout --quiet FETCH_HEAD \
  && cp -r /money/addon-modules/OpenSim-* addon-modules/ \
  && sed -e '/<appender-ref ref="LogFileAppender" \/>/d' -e 's|<level value="DEBUG" />|<level value="INFO" />|' \
