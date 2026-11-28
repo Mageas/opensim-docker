@@ -67,6 +67,9 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
       MYSQL_USER: ${MYSQL_USER:-opensim}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      OPENSIM_MONEY_SERVER: http://money:8008/
+      # Viewers buy currency through the portal.
+      OPENSIM_ECONOMY_URL: http://localhost:3000/
 
     # One more "<port>:<port>/udp" line per extra region.
     ports:
@@ -83,7 +86,39 @@ services:
     stop_grace_period: 60s
 
 
-  # Creates the portal's MariaDB account and table, then exits.
+  # DTL/NSL Money Server: balances and transfers. Only the simulator and the portal reach it,
+  # over the Docker network: it has no authentication of its own worth the name.
+  money:
+    image: opensim-local:${OPENSIM_VERSION:-0.9.3.0}
+    container_name: opensim-money
+    restart: unless-stopped
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Its console needs a terminal.
+    stdin_open: true
+    tty: true
+
+    command: ["money-server"]
+
+    environment:
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opensim}
+      MYSQL_USER: ${MYSQL_USER:-opensim}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MONEY_SCRIPT_KEY: ${MONEY_SCRIPT_KEY:?set MONEY_SCRIPT_KEY in .env}
+
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://127.0.0.1:8008/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+
+  # Creates the portal's MariaDB account and tables, then exits.
   web-setup:
     build: ./web
     image: opensim-web-local
@@ -122,9 +157,30 @@ services:
       OPENSIM_GRID_NAME: ${OPENSIM_GRID_NAME:-My OpenSim}
       OPENSIM_LOGIN_URI: http://${OPENSIM_PUBLIC_HOST}:9000/
       SIGNUP_ENABLED: ${PORTAL_SIGNUP_ENABLED:-true}
+      # Blank: viewers cannot buy currency. See docs/payments.md.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      CURRENCY_PER_EURO: ${CURRENCY_PER_EURO:-}
+      PURCHASE_MAX_EUROS: ${PURCHASE_MAX_EUROS:-}
+      MONEY_SERVER_URL: http://money:8008/
+      MONEY_SCRIPT_KEY: ${MONEY_SCRIPT_KEY}
 
     ports:
       - "127.0.0.1:3000:3000"
+
+
+  # Forwards Stripe's test events to the portal, with no public address:
+  # docker compose up -d stripe
+  stripe:
+    image: stripe/stripe-cli:v1.55.15
+    profiles: [stripe]
+    restart: unless-stopped
+    command:
+      - listen
+      - --forward-to=http://web:3000/stripe/webhook
+      - --events=payment_intent.succeeded,payment_intent.payment_failed
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-}
 
 
 volumes:

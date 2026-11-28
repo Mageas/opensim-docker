@@ -62,6 +62,9 @@ services:
       MYSQL_DATABASE: opensim
       MYSQL_USER: opensim
       MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQL}
+      OPENSIM_MONEY_SERVER: http://money:8008/
+      # Viewers buy currency through the portal.
+      OPENSIM_ECONOMY_URL: ${PORTAL_URL:?}/
 
     # OpenSim announces OPENSIM_PORT to viewers, so both sides of the mapping must match.
     # No Coolify domain: its proxy only carries HTTP, and the region needs UDP.
@@ -79,7 +82,38 @@ services:
     stop_grace_period: 60s
 
 
-  # Creates the portal's MariaDB account and table, then exits. It waits for OpenSim,
+  # DTL/NSL Money Server: balances and transfers. No port and no domain: only the simulator
+  # and the portal reach it, over the Docker network.
+  money:
+    image: ghcr.io/mageas/opensim:${OPENSIM_IMAGE_TAG:-stable}
+    restart: unless-stopped
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Its console needs a terminal.
+    stdin_open: true
+    tty: true
+
+    command: ["money-server"]
+
+    environment:
+      MYSQL_HOST: db
+      MYSQL_DATABASE: opensim
+      MYSQL_USER: opensim
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_MYSQL}
+      MONEY_SCRIPT_KEY: ${SERVICE_PASSWORD_MONEYSCRIPT}
+
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://127.0.0.1:8008/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+
+  # Creates the portal's MariaDB account and tables, then exits. It waits for OpenSim,
   # which creates the tables the account gets rights on.
   web-setup:
     image: ghcr.io/mageas/opensim-web:${OPENSIM_IMAGE_TAG:-stable}
@@ -123,6 +157,13 @@ services:
       OPENSIM_LOGIN_URI: http://${OPENSIM_PUBLIC_HOST}:${OPENSIM_PORT:-9000}/
       # false closes account creation.
       SIGNUP_ENABLED: ${PORTAL_SIGNUP_ENABLED:-true}
+      # Blank: viewers cannot buy currency. See docs/payments.md.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      CURRENCY_PER_EURO: ${CURRENCY_PER_EURO:-}
+      PURCHASE_MAX_EUROS: ${PURCHASE_MAX_EUROS:-}
+      MONEY_SERVER_URL: http://money:8008/
+      MONEY_SCRIPT_KEY: ${SERVICE_PASSWORD_MONEYSCRIPT}
 
 
 volumes:

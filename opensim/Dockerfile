@@ -3,6 +3,8 @@
 ARG OPENSIM_VERSION=0.9.3.0
 ARG OPENSIM_COMMIT=""
 ARG DOTNET_RUNTIME=8.0
+# DTL/NSL Money Server, .NET 8 fork for OpenSim 0.9.3 (MIT).
+ARG MONEY_SERVER_COMMIT=a5f746bbd0d869760e08987529376a9626d655f4
 
 
 # Build stage
@@ -24,6 +26,19 @@ RUN git clone --depth 1 --branch "${OPENSIM_VERSION}" https://github.com/opensim
     fi \
  && git rev-parse HEAD > /src/OPENSIM_COMMIT \
  && echo "OpenSim ${OPENSIM_VERSION} @ $(cat /src/OPENSIM_COMMIT)"
+
+# runprebuild adds every addon module to the solution, so the same build makes the
+# region module (OpenSim.Modules.Currency.dll) and MoneyServer.dll. The Money Server
+# logs to the console only: its log file would grow in the image's bin/ forever.
+ARG MONEY_SERVER_COMMIT
+RUN git init --quiet /money \
+ && git -C /money fetch --quiet --depth 1 \
+        https://github.com/ManfredAabye/opensimcurrencyserver-dotnet.git "${MONEY_SERVER_COMMIT}" \
+ && git -C /money checkout --quiet FETCH_HEAD \
+ && cp -r /money/addon-modules/OpenSim-* addon-modules/ \
+ && sed -e '/<appender-ref ref="LogFileAppender" \/>/d' -e 's|<level value="DEBUG" />|<level value="INFO" />|' \
+        /money/bin/MoneyServer.dll.config > bin/MoneyServer.dll.config \
+ && rm -rf /money
 
 RUN ./runprebuild.sh \
  && dotnet build -c Release OpenSim.sln \
