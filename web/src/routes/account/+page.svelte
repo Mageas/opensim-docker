@@ -82,6 +82,18 @@
 				</dl>
 			</section>
 
+			{#if data.paymentsEnabled}
+				<section class="card stack" aria-labelledby="payment-title">
+					<h2 id="payment-title">{m.account_payment_title()}</h2>
+					<p class="muted">{m.account_payment_text()}</p>
+					<p>
+						<a class="button secondary" href={resolve('/account/payment')}>
+							{m.account_payment_link()}
+						</a>
+					</p>
+				</section>
+			{/if}
+
 			<section class="card stack" aria-labelledby="password-title">
 				<h2 id="password-title">{m.account_password_title()}</h2>
 				<p class="muted">{m.account_password_text()}</p>

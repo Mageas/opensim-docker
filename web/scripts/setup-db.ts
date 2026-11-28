@@ -1,6 +1,6 @@
 /**
  * Prepares the OpenSim database for the portal, as root, before the portal starts: creates
- * the web_sessions table and the portal's own MariaDB account, with only the privileges it
+ * the portal's tables (web_*) and its own MariaDB account, with only the privileges it
  * needs. Safe to run on every deploy.
  *
  *   node scripts/setup-db.ts
@@ -22,9 +22,40 @@ const WEB_SESSIONS_TABLE = `
 		KEY expires_at (expires_at)
 	) ENGINE=InnoDB`;
 
+/** One Stripe customer per avatar that saved a card; the card itself stays at Stripe. */
+const WEB_CUSTOMERS_TABLE = `
+	CREATE TABLE IF NOT EXISTS web_customers (
+		user_id CHAR(36) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
+		customer_id VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+		payment_method_id VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL,
+		card_brand VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
+		card_last4 CHAR(4) CHARACTER SET ascii COLLATE ascii_bin NULL,
+		PRIMARY KEY (user_id)
+	) ENGINE=InnoDB`;
+
+/**
+ * Currency purchases under their Stripe PaymentIntent id. Rows stay when the account is
+ * deleted: they are the record of what was paid.
+ */
+const WEB_PURCHASES_TABLE = `
+	CREATE TABLE IF NOT EXISTS web_purchases (
+		id VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+		user_id CHAR(36) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
+		amount INT NOT NULL,
+		price_cents INT NOT NULL,
+		status ENUM('pending', 'crediting', 'credited', 'credit_failed', 'failed') NOT NULL,
+		created_at DATETIME NOT NULL,
+		updated_at DATETIME NOT NULL,
+		PRIMARY KEY (id),
+		KEY user_id (user_id),
+		KEY status (status)
+	) ENGINE=InnoDB`;
+
 /** MariaDB needs SELECT on the columns a DELETE or UPDATE filters on. */
 const GRANTS: Record<string, string[]> = {
 	web_sessions: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
+	web_customers: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
+	web_purchases: ['SELECT', 'INSERT', 'UPDATE'],
 	UserAccounts: ['SELECT', 'INSERT', 'DELETE'],
 	auth: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
 	inventoryfolders: ['SELECT', 'INSERT', 'DELETE'],
@@ -96,6 +127,8 @@ export async function setupDatabase(
 
 	await connection.query(`USE ??`, [database]);
 	await connection.query(WEB_SESSIONS_TABLE);
+	await connection.query(WEB_CUSTOMERS_TABLE);
+	await connection.query(WEB_PURCHASES_TABLE);
 
 	await connection.query('CREATE USER IF NOT EXISTS ?@? IDENTIFIED BY ?', [user, HOST, password]);
 	await connection.query('ALTER USER ?@? IDENTIFIED BY ?', [user, HOST, password]);

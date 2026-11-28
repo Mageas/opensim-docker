@@ -258,6 +258,7 @@ const DELETE_STATEMENTS = [
 	'DELETE FROM tokens WHERE UUID = :id',
 	'DELETE FROM auth WHERE UUID = :id',
 	'DELETE FROM web_sessions WHERE user_id = :id',
+	'DELETE FROM web_customers WHERE user_id = :id',
 	'DELETE FROM UserAccounts WHERE PrincipalID = :id'
 ];
 

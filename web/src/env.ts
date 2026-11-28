@@ -27,6 +27,17 @@ function flag(value: string | undefined): boolean {
 	throw new Error('Must be true or false');
 }
 
+function optional(value: string | undefined): string {
+	return value ?? '';
+}
+
+function positiveInteger(value: string | undefined): number | null {
+	if (!value) return null;
+	const number = Number(value);
+	if (!Number.isSafeInteger(number) || number < 1) throw new Error('Not a whole number above 0');
+	return number;
+}
+
 function httpUrl(value: string | undefined): string {
 	const url = required(value);
 	if (url && !/^https?:\/\/[^\s/]+/.test(url)) throw new Error('Not an http:// or https:// URL');
@@ -53,5 +64,30 @@ export const variables = defineEnvVars({
 	SIGNUP_ENABLED: {
 		schema: flag,
 		description: 'false closes account creation; true by default'
+	},
+	STRIPE_SECRET_KEY: {
+		schema: optional,
+		description:
+			'Stripe secret key, sk_test_ in a sandbox. Blank turns payments off; set, it needs every variable below'
+	},
+	STRIPE_WEBHOOK_SECRET: {
+		schema: optional,
+		description: 'Signing secret (whsec_) of the Stripe webhook endpoint <portal>/stripe/webhook'
+	},
+	CURRENCY_PER_EURO: {
+		schema: positiveInteger,
+		description: 'Currency units that one euro buys'
+	},
+	PURCHASE_MAX_EUROS: {
+		schema: positiveInteger,
+		description: 'The most that one purchase may charge, in euros'
+	},
+	MONEY_SERVER_URL: {
+		schema: (value) => (value ? httpUrl(value) : ''),
+		description: 'The Money Server on the Docker network, e.g. http://money:8008/'
+	},
+	MONEY_SCRIPT_KEY: {
+		schema: optional,
+		description: 'MoneyScriptAccessKey of the Money Server, the same value as its MONEY_SCRIPT_KEY'
 	}
 });

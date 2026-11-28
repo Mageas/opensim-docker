@@ -14,5 +14,5 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	const done = url.searchParams.get('done');
 	const notice: Notice | null = NOTICES.find((value) => value === done) ?? null;
-	return { account, notice };
+	return { account, notice, paymentsEnabled: runtime().payments !== null };
 };

@@ -1,8 +1,9 @@
 /**
- * Playwright's web server: a throwaway database, then two builds of the portal on it,
+ * Playwright's web server: a throwaway database, then three builds of the portal on it,
  * behind a pretend proxy (X-Forwarded-For) so each test can come from its own address:
- * port 4175 with account creation closed, then port 4174 as deployed by default.
- * Playwright waits for 4174, which starts last.
+ * port 4175 with account creation closed, port 4176 with payments on (its Stripe key
+ * reaches no Stripe, so tests stay on the pages that need none), then port 4174 as
+ * deployed by default. Playwright waits for 4174, which starts last.
  *
  *   node tests/e2e/server.ts
  */
@@ -62,6 +63,17 @@ process.on('SIGINT', () => void shutdown(0));
 
 for (const [port, env] of [
 	[4175, { SIGNUP_ENABLED: 'false' }],
+	[
+		4176,
+		{
+			STRIPE_SECRET_KEY: 'sk_test_e2e',
+			STRIPE_WEBHOOK_SECRET: 'whsec_e2e',
+			CURRENCY_PER_EURO: '250',
+			PURCHASE_MAX_EUROS: '50',
+			MONEY_SERVER_URL: 'http://127.0.0.1:9/',
+			MONEY_SCRIPT_KEY: 'e2e'
+		}
+	],
 	[4174, {}]
 ] as const) {
 	const portal = startPortal(port, env);

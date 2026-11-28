@@ -31,7 +31,9 @@ export default defineConfig({
 					'connect-src': ['self'],
 					'manifest-src': ['self'],
 					'base-uri': ['none'],
-					'form-action': ['self'],
+					// The payment page's form redirects to Stripe Checkout, and browsers check
+					// form-action on the redirect too.
+					'form-action': ['self', 'https://checkout.stripe.com'],
 					'frame-ancestors': ['none']
 				}
 			}
