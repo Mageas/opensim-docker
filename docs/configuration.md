@@ -20,8 +20,12 @@
 | `MYSQL_BUFFER_POOL` | `512M` | MariaDB memory |
 | `PORTAL_URL` | required | Coolify only: the account portal's address, e.g. `https://account.world.example.com` |
 | `PORTAL_SIGNUP_ENABLED` | `true` | `false` closes account creation on the portal; existing avatars still log in |
+| `STRIPE_SECRET_KEY` | blank | Turns payments on: see [Payments](payments.md) |
+| `STRIPE_WEBHOOK_SECRET` | blank | Required with payments |
+| `CURRENCY_PER_EURO` | blank | Required with payments: currency units one euro buys |
+| `PURCHASE_MAX_EUROS` | blank | Required with payments: the most one purchase charges |
 
-On Coolify the passwords are generated: `SERVICE_PASSWORD_OWNER` for the admin account, `SERVICE_PASSWORD_MYSQL` and `SERVICE_PASSWORD_MYSQLROOT` for the database, `SERVICE_PASSWORD_MYSQLWEB` for the portal's database account. Locally they come from `.env`.
+On Coolify the passwords are generated: `SERVICE_PASSWORD_OWNER` for the admin account, `SERVICE_PASSWORD_MYSQL` and `SERVICE_PASSWORD_MYSQLROOT` for the database, `SERVICE_PASSWORD_MYSQLWEB` for the portal's database account, `SERVICE_PASSWORD_MONEYSCRIPT` for the key the portal credits purchases with. Locally they come from `.env`.
 
 Any other OpenSim setting goes in [opensim/config/overrides.ini](../opensim/config/overrides.ini).
 

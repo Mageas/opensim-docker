@@ -13,6 +13,7 @@ It runs as the `web` service and works directly on OpenSim's tables, so a change
 | `/login` | Avatar name and password, as in the viewer |
 | `/account` | Status in the grid, creation date, last login, UUID |
 | `/account/password` | Sets a new password, at least 15 characters |
+| `/account/payment` | Saves the card the viewer charges when buying currency, with payments on ([Payments](payments.md)) |
 | `/account/delete` | Deletes the avatar, after asking for the password |
 
 Deleting removes the account, its inventory, appearance, friends, profile, group memberships and offline messages. Objects left in the regions stay.

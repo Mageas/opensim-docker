@@ -14,6 +14,7 @@ Production runs the `stable` image, which only exists after a promotion.
    | `PORTAL_URL` | `https://account.world.example.com` |
 
 4. Open port 9000 as in [step 2](02-prepare-the-server.md), then deploy.
+5. To sell currency, add the live Stripe keys: [Go live with payments](../payments.md#go-live).
 
 Before each later promotion, [back up](../operations.md#back-up) the production database: OpenSim upgrades it on start and cannot downgrade it.
 

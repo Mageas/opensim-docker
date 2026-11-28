@@ -42,6 +42,11 @@ If the login works but the viewer gets stuck on "Connecting to region", either `
 
 Use **Advanced > Pull Latest Images & Restart**. A plain Restart keeps the old image.
 
+
+## Payments
+
+To let avatars buy currency from the viewer, follow [Set up on Coolify](../payments.md#set-up-on-coolify).
+
 ---
 
 Previous: [2. Prepare the server](02-prepare-the-server.md) · Next: [4. Go live](04-go-live.md)
