@@ -51,6 +51,9 @@ BankerAvatar = "00000000-0000-0000-0000-000000000001"
 EnableScriptSendMoney = "true"
 MoneyScriptAccessKey = "${MONEY_SCRIPT_KEY}"
 MoneyScriptIPaddress = "opensim-web"
+; The alert that SendMoney sends to the receiver: only the portal passes that check, so
+; it always announces a purchase, often one that a bank confirmed after the viewer gave up.
+BalanceMessageReceiveMoney = "Purchase credited: {0}."
 EOF
 
     log "Money Server on port 8008"
