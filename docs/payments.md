@@ -159,13 +159,25 @@ The RC keeps its test keys. The currency only goes one way: no sale back for eur
 
 ## A purchase paid but not credited
 
-The portal never credits a purchase twice, so when the Money Server fails during a credit, the purchase waits for you. The `web` logs say `is paid but not credited`.
+The portal never credits a purchase twice, so when the Money Server fails or takes more than 10 seconds to answer, the purchase waits for you. The `web` logs say `is paid but not credited`.
 
 ```bash
 docker exec -it <db container> mariadb -uroot -p opensim -e "SELECT id, user_id, amount, price_cents, updated_at FROM web_purchases WHERE status = 'credit_failed'"
 ```
 
-Refund it from the Stripe dashboard, under **Payments**, with its `pi_...` id.
+A Money Server that answered late may have credited it anyway. Look for its `pi_...` id in the Money Server's transactions:
+
+```bash
+docker exec -it <db container> mariadb -uroot -p opensim -e "SELECT FROM_UNIXTIME(time), amount, status FROM transactions WHERE description LIKE 'Purchase pi_...%'"
+```
+
+Status `0` means it was credited: mark the purchase so, and refund nothing.
+
+```bash
+docker exec -it <db container> mariadb -uroot -p opensim -e "UPDATE web_purchases SET status = 'credited' WHERE id = 'pi_...'"
+```
+
+With no row, or another status, refund it from the Stripe dashboard, under **Payments**.
 
 
 ## Troubleshooting
